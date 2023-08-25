@@ -1,0 +1,158 @@
+<html>
+<head>
+  <title>Calculadora de Rota e Preço</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f0f0;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    #container {
+      background-color: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      width: 400px;
+    }
+    h1 {
+      color: #333333;
+      margin-top: 0;
+      text-align: center;
+    }
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #dddddd;
+      border-radius: 4px;
+    }
+    .btn-container {
+      display: flex;
+      justify-content: space-between;
+    }
+    .btn-container button {
+      flex: 1;
+      margin: 0 5px;
+    }
+    #map {
+      height: 300px;
+    }
+    #preco {
+      text-align: center;
+      margin-top: 10px;
+      font-size: 18px;
+    }
+  </style>
+  
+</head>
+<body>
+  <div id="container">
+    <h1>Calculadora de Rota e Preço</h1>
+    <label for="startInput">Ponto de partida:</label>
+    <input id="startInput" type="text" placeholder="Digite o ponto de partida">
+    <label for="endInput">Ponto de destino:</label>
+    <input id="endInput" type="text" placeholder="Digite o ponto de destino">
+    <label for="waypointsInput">Paradas intermediárias (opcional, separadas por vírgulas):</label>
+    <input id="waypointsInput" type="text" placeholder="Ex: Local 1, Local 2, Local 3">
+    <div class="btn-container">
+      <button onclick="calcularRota()">Calcular Rota</button>
+      
+    </div>
+    <div id="map"></div>
+    <p id="preco">Preço estimado: Aguardando rota...</p>
+  </div>
+
+  <script type="text/javascript">
+    var map;
+    var geocoder;
+    var directionsService;
+    var directionsRenderer;
+    var placesService;
+
+    function initMap() {
+      map = new google.maps.Map(document.getElementById('map'), {
+        zoom: 7,
+        center: {lat: 41.85, lng: -87.65}
+      });
+      geocoder = new google.maps.Geocoder();
+      directionsService = new google.maps.DirectionsService();
+      directionsRenderer = new google.maps.DirectionsRenderer();
+      directionsRenderer.setMap(map);
+      placesService = new google.maps.places.PlacesService(map);
+    }
+
+    function calcularRota() {
+      var start = document.getElementById('startInput').value;
+      var end = document.getElementById('endInput').value;
+      var waypointsInput = document.getElementById('waypointsInput').value;
+      var waypoints = [];
+
+      if (waypointsInput) {
+        waypoints = waypointsInput.split(',').map(function(waypoint) {
+          return { location: waypoint.trim(), stopover: true };
+        });
+      }
+
+      var request = {
+        origin: start,
+        destination: end,
+        waypoints: waypoints,
+        travelMode: 'DRIVING'
+      };
+
+      directionsService.route(request, function(result, status) {
+        if (status === 'OK') {
+          directionsRenderer.setDirections(result);
+          calcularPreco(result.routes[0].legs);
+        } else {
+          alert('Não foi possível calcular a rota.');
+        }
+      });
+    }
+
+    
+       
+
+    function calcularPreco(legs) {
+      var distanciaTotal = 0;
+      var tempoTotal = 0;
+
+      for (var i = 0; i < legs.length; i++) {
+        distanciaTotal += legs[i].distance.value / 1000; // em quilômetros
+        tempoTotal += legs[i].duration.value / 3600; // em horas
+      }
+
+      // Algoritmo de precificação (exemplo)
+      var precoPorKm = 3;
+      var precoPorHora = 60;
+      var precoTotal = (distanciaTotal * precoPorKm) + (tempoTotal * precoPorHora);
+
+      document.getElementById('preco').innerHTML = 'Preço estimado: R$ ' + precoTotal.toFixed(2);
+    }
+    function initAutocomplete() {
+      var startInput = document.getElementById('startInput');
+      var endInput = document.getElementById('endInput');
+      var waypointsInput = document.getElementById('waypointsInput');
+
+      var autocompleteStart = new google.maps.places.Autocomplete(startInput);
+      var autocompleteEnd = new google.maps.places.Autocomplete(endInput);
+      var autocompleteWaypoints = new google.maps.places.Autocomplete(waypointsInput);
+
+      autocompleteStart.setFields(['place_id', 'formatted_address']);
+      autocompleteEnd.setFields(['place_id', 'formatted_address']);
+      autocompleteWaypoints.setFields(['place_id', 'formatted_address']);
+    }
+  </script>
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDya9mCaf79cKJ0l6BD7cVSMzJGt8144kA&libraries=places&callback=initMap&callback=initAutocomplete"></script>  
+</body>
+</html>
